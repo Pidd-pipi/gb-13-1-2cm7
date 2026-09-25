@@ -23,9 +23,25 @@
     
     <van-cell-group inset>
       <van-cell title="我发布的" icon="shop-o" is-link @click="router.push('/my-books')" />
+      <van-cell
+        title="我的交易"
+        icon="balance-list-o"
+        is-link
+        @click="router.push('/my-transactions')"
+      >
+        <template #value>
+          <van-badge v-if="pendingReviewCount > 0" :content="pendingReviewCount" />
+        </template>
+      </van-cell>
       <van-cell title="我的收藏" icon="star-o" is-link @click="router.push('/favorites')" />
       <van-cell title="求购信息" icon="notes-o" is-link @click="router.push('/purchase-requests')" />
-      <van-cell title="我的评价" icon="comment-o" is-link @click="showReviews" />
+      <van-cell
+        v-if="pendingReviewCount > 0"
+        :title="`待评价（${pendingReviewCount}）`"
+        icon="comment-o"
+        is-link
+        @click="router.push('/my-transactions')"
+      />
     </van-cell-group>
     
     <van-cell-group inset>
@@ -62,11 +78,13 @@ import { useRouter } from 'vue-router';
 import { showDialog, showToast } from 'vant';
 import { useAuthStore } from '@/store/auth';
 import { updateProfile } from '@/api/auth';
+import { getMyTransactions } from '@/api/review';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const activeTab = ref(4);
 const showEdit = ref(false);
+const pendingReviewCount = ref(0);
 
 const editForm = reactive({
   name: '',
@@ -92,13 +110,6 @@ const saveProfile = async () => {
   } catch {}
 };
 
-const showReviews = () => {
-  showDialog({
-    title: '我的评价',
-    message: '功能开发中...',
-  });
-};
-
 const showAbout = () => {
   showDialog({
     title: '关于我们',
@@ -111,9 +122,19 @@ const logout = () => {
   router.replace('/login');
 };
 
+const fetchPendingReviewCount = async () => {
+  try {
+    const result = await getMyTransactions();
+    pendingReviewCount.value = result.pendingReviewCount;
+  } catch {
+    pendingReviewCount.value = 0;
+  }
+};
+
 onMounted(() => {
   if (authStore.isAuthenticated) {
     authStore.fetchCurrentUser();
+    fetchPendingReviewCount();
   }
 });
 </script>

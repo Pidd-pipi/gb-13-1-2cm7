@@ -1,7 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn, OneToMany, Index } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn, OneToMany, OneToOne, Index } from 'typeorm';
 import { User } from './User';
 import { Favorite } from './Favorite';
 import { Message } from './Message';
+import { Transaction } from './Transaction';
 
 export type BookCondition = 'new' | 'like_new' | 'good' | 'fair';
 export type BookStatus = 'available' | 'reserved' | 'sold';
@@ -66,6 +67,9 @@ export class Book {
 
   @OneToMany(() => Message, message => message.book)
   messages: Message[];
+
+  @OneToOne(() => Transaction, transaction => transaction.book)
+  transaction: Transaction;
 
   @CreateDateColumn()
   @Index('idx_book_created')

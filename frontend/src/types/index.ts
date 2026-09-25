@@ -69,12 +69,56 @@ export interface Review {
   id: string;
   reviewerId: string;
   revieweeId: string;
+  transactionId?: string;
   bookId?: string;
   type: ReviewType;
   content?: string;
   reviewer?: User;
   createdAt: string;
 }
+
+export type TransactionStatus = 'sold' | 'completed';
+
+export interface TransactionParty {
+  id: string;
+  name: string;
+  avatarUrl?: string;
+}
+
+export interface TransactionItem {
+  id: string;
+  status: TransactionStatus;
+  completedAt?: string | null;
+  createdAt: string;
+  bookId: string;
+  sellerId: string;
+  buyerId: string;
+  role: 'seller' | 'buyer';
+  book: {
+    id: string;
+    title: string;
+    price: number | string;
+    cover?: string | null;
+  };
+  seller: TransactionParty;
+  buyer: TransactionParty;
+  sellerReviewed: boolean;
+  buyerReviewed: boolean;
+  canReview: boolean;
+}
+
+export interface BuyerCandidate {
+  id: string;
+  name?: string;
+  avatarUrl?: string;
+  department?: string;
+}
+
+export const reviewTypeMap: Record<ReviewType, string> = {
+  positive: '好评',
+  neutral: '中评',
+  negative: '差评',
+};
 
 export interface AuthState {
   token: string | null;

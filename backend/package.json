@@ -7,7 +7,8 @@
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "typeorm": "typeorm-ts-node-commonjs"
+    "typeorm": "typeorm-ts-node-commonjs",
+    "test:flow": "ts-node --transpile-only src/test/integration.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -32,6 +33,7 @@
     "@types/multer": "^1.4.7",
     "@types/node": "^20.5.0",
     "@types/nodemailer": "^6.4.9",
+    "sql.js": "^1.14.2",
     "ts-node": "^10.9.1",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.1.6"

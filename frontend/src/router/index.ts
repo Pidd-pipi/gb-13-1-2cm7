@@ -69,6 +69,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/my-transactions',
+    name: 'MyTransactions',
+    component: () => import('@/pages/MyTransactions.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/favorites',
     name: 'Favorites',
     component: () => import('@/pages/Favorites.vue'),

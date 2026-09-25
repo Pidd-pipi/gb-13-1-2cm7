@@ -1,10 +1,11 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, Index, Unique } from 'typeorm';
 import { User } from './User';
+import { Transaction } from './Transaction';
 
 export type ReviewType = 'positive' | 'neutral' | 'negative';
 
 @Entity('reviews')
-@Unique(['reviewerId', 'revieweeId', 'bookId'])
+@Unique(['reviewerId', 'transactionId'])
 export class Review {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -23,6 +24,14 @@ export class Review {
   @Index('idx_review_reviewee')
   revieweeId: string;
 
+  @ManyToOne(() => Transaction)
+  transaction: Transaction;
+
+  @Column()
+  @Index('idx_review_transaction')
+  transactionId: string;
+
+  // 冗余书籍 id，便于按书展示评价
   @Column({ nullable: true })
   bookId: string;
 

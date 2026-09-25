@@ -167,6 +167,10 @@ export const updateBookStatus = async (req: AuthenticatedRequest, res: Response)
   const { id } = req.params;
   const { status } = req.body;
 
+  if (!['available', 'reserved', 'sold'].includes(status)) {
+    return res.status(400).json({ message: '无效的书籍状态' });
+  }
+
   const bookRepository = AppDataSource.getRepository(Book);
   const book = await bookRepository.findOne({ where: { id } });
 
@@ -176,6 +180,15 @@ export const updateBookStatus = async (req: AuthenticatedRequest, res: Response)
 
   if (book.sellerId !== req.userId) {
     return res.status(403).json({ message: '无权限操作' });
+  }
+
+  // 标记售出必须选定买家，走成交接口创建交易记录
+  if (status === 'sold') {
+    return res.status(400).json({ message: '标记售出时请选择聊过这本书的买家' });
+  }
+
+  if (book.status === 'sold') {
+    return res.status(400).json({ message: '书籍已售出，无法修改状态' });
   }
 
   book.status = status;
@@ -196,6 +209,10 @@ export const deleteBook = async (req: AuthenticatedRequest, res: Response) => {
 
   if (book.sellerId !== req.userId) {
     return res.status(403).json({ message: '无权限操作' });
+  }
+
+  if (book.status === 'sold') {
+    return res.status(400).json({ message: '已成交的书籍有关联交易记录，不能删除' });
   }
 
   await bookRepository.delete({ id });

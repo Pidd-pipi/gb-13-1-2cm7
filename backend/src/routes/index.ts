@@ -20,6 +20,12 @@ import {
   closePurchaseRequest,
 } from '../controllers/purchaseRequest.controller';
 import { sendMessage, getConversations, getMessages, getUnreadCount } from '../controllers/message.controller';
+import {
+  getBookBuyerCandidates,
+  markBookSold,
+  confirmTransaction,
+  getMyTransactions,
+} from '../controllers/transaction.controller';
 import { createReview, getUserReviews as getUserReviewsPublic } from '../controllers/review.controller';
 
 const router = Router();
@@ -41,6 +47,12 @@ router.put('/books/:id/status', authMiddleware, updateBookStatus);
 router.delete('/books/:id', authMiddleware, deleteBook);
 router.get('/my/books', authMiddleware, getMyBooks);
 router.get('/recommend/books', authMiddleware, getRecommendBooks);
+
+// 成交：卖家选定买家标记售出 -> 买家确认收货 -> 双方互评
+router.get('/books/:bookId/buyer-candidates', authMiddleware, getBookBuyerCandidates);
+router.post('/books/:bookId/sold', authMiddleware, markBookSold);
+router.put('/transactions/:id/confirm', authMiddleware, confirmTransaction);
+router.get('/my/transactions', authMiddleware, getMyTransactions);
 
 router.post('/favorites/toggle', authMiddleware, toggleFavorite);
 router.get('/favorites', authMiddleware, getFavorites);
