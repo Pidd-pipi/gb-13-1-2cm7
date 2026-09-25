@@ -5,8 +5,12 @@ import { Book, BookStatus, SubjectCategory, BookCondition } from '../entities/Bo
 import { User } from '../entities/User';
 import { Favorite } from '../entities/Favorite';
 import { BrowsingHistory } from '../entities/BrowsingHistory';
+import { Message } from '../entities/Message';
+import { Transaction } from '../entities/Transaction';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
 import { minioService } from '../services/minio.service';
+
+const VALID_BOOK_STATUSES: BookStatus[] = ['available', 'reserved', 'sold'];
 
 export const createBook = async (req: AuthenticatedRequest, res: Response) => {
   const {
@@ -165,7 +169,11 @@ export const getBookById = async (req: Request, res: Response) => {
 
 export const updateBookStatus = async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
-  const { status } = req.body;
+  const { status, buyerId } = req.body;
+
+  if (!VALID_BOOK_STATUSES.includes(status)) {
+    return res.status(400).json({ message: '无效的书籍状态' });
+  }
 
   const bookRepository = AppDataSource.getRepository(Book);
   const book = await bookRepository.findOne({ where: { id } });
@@ -178,10 +186,112 @@ export const updateBookStatus = async (req: AuthenticatedRequest, res: Response)
     return res.status(403).json({ message: '无权限操作' });
   }
 
+  const transactionRepository = AppDataSource.getRepository(Transaction);
+
+  if (status === 'sold') {
+    if (book.status === 'sold') {
+      return res.status(400).json({ message: '该书籍已售出' });
+    }
+
+    if (!buyerId) {
+      return res.status(400).json({ message: '请从聊过这本书的同学中选择买家' });
+    }
+
+    if (buyerId === req.userId) {
+      return res.status(400).json({ message: '不能选择自己作为买家' });
+    }
+
+    const messageRepository = AppDataSource.getRepository(Message);
+    const chatted = await messageRepository.findOne({
+      where: [
+        { bookId: id, senderId: buyerId, receiverId: req.userId },
+        { bookId: id, senderId: req.userId, receiverId: buyerId },
+      ],
+    });
+
+    if (!chatted) {
+      return res.status(400).json({ message: '该同学没有聊过这本书，无法选为买家' });
+    }
+
+    try {
+      await AppDataSource.transaction(async (manager) => {
+        book.status = 'sold';
+        await manager.save(book);
+
+        const transaction = manager.create(Transaction, {
+          bookId: id,
+          sellerId: req.userId!,
+          buyerId,
+          status: 'pending_confirm',
+        });
+        await manager.save(transaction);
+      });
+    } catch (error) {
+      return res.status(400).json({ message: '该书籍已存在成交记录' });
+    }
+
+    return res.json({ message: '已标记售出，等待买家确认收货', book });
+  }
+
+  // 从已售出恢复为可购买/已预约：仅允许取消尚未确认收货的交易
+  if (book.status === 'sold') {
+    const transaction = await transactionRepository.findOne({ where: { bookId: id } });
+    if (transaction) {
+      if (transaction.status === 'completed') {
+        return res.status(400).json({ message: '交易已完成，无法修改书籍状态' });
+      }
+      await transactionRepository.remove(transaction);
+    }
+  }
+
   book.status = status;
   await bookRepository.save(book);
 
   res.json({ message: '状态更新成功', book });
+};
+
+// 卖家标记售出时，可选的买家：与卖家聊过这本书的同学
+export const getBookChatUsers = async (req: AuthenticatedRequest, res: Response) => {
+  const { id } = req.params;
+
+  const bookRepository = AppDataSource.getRepository(Book);
+  const book = await bookRepository.findOne({ where: { id } });
+
+  if (!book) {
+    return res.status(404).json({ message: '书籍不存在' });
+  }
+
+  if (book.sellerId !== req.userId) {
+    return res.status(403).json({ message: '无权限操作' });
+  }
+
+  const messageRepository = AppDataSource.getRepository(Message);
+  const messages = await messageRepository.find({
+    where: [
+      { bookId: id, senderId: req.userId },
+      { bookId: id, receiverId: req.userId },
+    ],
+  });
+
+  const userIds = new Set<string>();
+  messages.forEach((msg) => {
+    const otherId = msg.senderId === req.userId ? msg.receiverId : msg.senderId;
+    if (otherId !== req.userId) {
+      userIds.add(otherId);
+    }
+  });
+
+  if (userIds.size === 0) {
+    return res.json([]);
+  }
+
+  const userRepository = AppDataSource.getRepository(User);
+  const users = await userRepository.find({
+    where: { id: In(Array.from(userIds)) },
+    select: ['id', 'name', 'avatarUrl', 'studentId', 'department'],
+  });
+
+  res.json(users);
 };
 
 export const deleteBook = async (req: AuthenticatedRequest, res: Response) => {

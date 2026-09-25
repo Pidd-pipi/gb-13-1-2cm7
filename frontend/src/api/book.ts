@@ -57,8 +57,8 @@ export const createBook = (data: {
   });
 };
 
-export const updateBookStatus = (id: string, status: BookStatus) => {
-  return request.put(`/books/${id}/status`, { status });
+export const updateBookStatus = (id: string, status: BookStatus, buyerId?: string) => {
+  return request.put(`/books/${id}/status`, { status, buyerId });
 };
 
 export const deleteBook = (id: string) => {

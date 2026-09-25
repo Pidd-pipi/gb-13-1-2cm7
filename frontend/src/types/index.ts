@@ -76,6 +76,23 @@ export interface Review {
   createdAt: string;
 }
 
+export type TransactionStatus = 'pending_confirm' | 'completed';
+
+export interface Transaction {
+  id: string;
+  bookId: string;
+  sellerId: string;
+  buyerId: string;
+  status: TransactionStatus;
+  sellerReviewed: boolean;
+  buyerReviewed: boolean;
+  confirmedAt?: string;
+  createdAt: string;
+  book?: Book;
+  seller?: User;
+  buyer?: User;
+}
+
 export interface AuthState {
   token: string | null;
   user: User | null;
@@ -105,4 +122,10 @@ export const categoryMap: Record<SubjectCategory, string> = {
   business: '经管',
   arts: '艺术',
   other: '其他',
+};
+
+export const reviewTypeMap: Record<ReviewType, string> = {
+  positive: '好评',
+  neutral: '中评',
+  negative: '差评',
 };

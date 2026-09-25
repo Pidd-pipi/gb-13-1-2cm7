@@ -11,6 +11,7 @@ import {
   deleteBook,
   getMyBooks,
   getRecommendBooks,
+  getBookChatUsers,
 } from '../controllers/book.controller';
 import { toggleFavorite, getFavorites, getBrowsingHistory } from '../controllers/favorite.controller';
 import {
@@ -21,6 +22,7 @@ import {
 } from '../controllers/purchaseRequest.controller';
 import { sendMessage, getConversations, getMessages, getUnreadCount } from '../controllers/message.controller';
 import { createReview, getUserReviews as getUserReviewsPublic } from '../controllers/review.controller';
+import { confirmTransaction, getMyTransactions } from '../controllers/transaction.controller';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -39,6 +41,7 @@ router.get('/books/:id', getBookById);
 router.post('/books', authMiddleware, upload.array('images', 5), createBook);
 router.put('/books/:id/status', authMiddleware, updateBookStatus);
 router.delete('/books/:id', authMiddleware, deleteBook);
+router.get('/books/:id/chat-users', authMiddleware, getBookChatUsers);
 router.get('/my/books', authMiddleware, getMyBooks);
 router.get('/recommend/books', authMiddleware, getRecommendBooks);
 
@@ -60,5 +63,8 @@ router.post('/reviews', authMiddleware, createReview);
 router.get('/reviews/user/:userId', (req, res) => {
   void getUserReviewsPublic(req, res);
 });
+
+router.post('/transactions/:id/confirm', authMiddleware, confirmTransaction);
+router.get('/my/transactions', authMiddleware, getMyTransactions);
 
 export default router;
